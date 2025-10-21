@@ -48,8 +48,14 @@ class Settings(BaseSettings):
     # Embedding配置
     EMBEDDING_DIMENSION: int = 768  # nomic-embed-text的embedding维度
     
+    # SearXNG搜索引擎配置
+    SEARXNG_URL: str = "http://localhost:8888"  # SearXNG服务地址
+    SEARXNG_TIMEOUT: int = 10  # 搜索超时时间(秒)
+    SEARXNG_MAX_RESULTS: int = 3  # 最大搜索结果数
+    
     # 业务配置
     CONFIDENCE_THRESHOLD: float = 0.7  # 答案置信度阈值
+    CONFIDENCE_THRESHOLD_WEB_SEARCH: float = 0.2  # 启用网络搜索的置信度阈值
     MAX_CONTEXT_TURNS: int = 5  # 最大上下文轮数
     SESSION_TIMEOUT: int = 1800  # 会话超时时间(秒)
     SIMILAR_QUESTIONS_COUNT: int = 3  # 推荐相似问题数量

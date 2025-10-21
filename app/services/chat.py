@@ -63,14 +63,17 @@ class ChatService:
                 else:
                     preliminary_confidence = (raw_score - baseline) / (1.0 - baseline)
                 
-                # 如果置信度太低（<0.2），启用网络搜索
-                if preliminary_confidence < 0.2:
+                # 如果置信度太低，启用网络搜索
+                if preliminary_confidence < settings.CONFIDENCE_THRESHOLD_WEB_SEARCH:
                     use_web_search = True
                     logger.info(f"置信度过低({preliminary_confidence:.2%})，启用网络搜索")
             
             if use_web_search:
                 # 使用SearXNG网络搜索
-                search_results = await search_service.search(message, max_results=3)
+                search_results = await search_service.search(
+                    message, 
+                    max_results=settings.SEARXNG_MAX_RESULTS
+                )
                 
                 if search_results:
                     # 基于搜索结果生成答案
