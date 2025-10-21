@@ -18,35 +18,63 @@ class LLMService:
         self,
         question: str,
         context: str,
-        history: List[Dict[str, str]] = None
-    ) -> str:
+        history: List[Dict[str, str]] = None,
+        confidence: float = 0.0
+    ) -> tuple[str, str]:
         """生成答案
         
         Args:
             question: 用户问题
             context: 从知识库检索到的上下文
             history: 对话历史
+            confidence: 知识库匹配置信度
             
         Returns:
-            生成的答案
+            (生成的答案, 答案来源标识)
         """
         try:
-            # 构建prompt
-            system_prompt = """你是一个专业的智能客服助手。请根据提供的知识库内容回答用户问题。
+            # 根据置信度调整回答策略
+            if confidence >= 0.6:
+                # 高置信度：严格基于知识库
+                system_prompt = """你是一个专业的智能客服助手。请严格根据提供的知识库内容回答用户问题。
 
-规则：
-1. 优先使用知识库中的信息回答
+回答规则：
+1. 必须基于知识库内容回答
 2. 回答要准确、专业、友好
-3. 如果知识库中没有相关信息，礼貌地告知用户并建议联系人工客服
-4. 保持回答简洁明了
+3. 保持回答简洁明了
 """
-            
-            user_prompt = f"""知识库内容：
+                user_prompt = f"""知识库内容：
 {context}
 
 用户问题：{question}
 
-请根据知识库内容回答用户问题。"""
+请严格根据上述知识库内容回答问题。"""
+                answer_source = "knowledge_base"
+                
+            else:
+                # 低置信度：允许通用回答
+                system_prompt = """你是一个智能AI助手，既可以回答专业客服问题，也可以进行日常对话。
+
+回答规则：
+1. 如果知识库中有相关内容，优先参考使用
+2. 如果知识库中没有，使用你的通用知识友好地回答
+3. 回答要自然、有帮助、友好
+4. 保持专业但不失亲和力
+"""
+                
+                if context.strip():
+                    user_prompt = f"""参考知识库（可能相关度不高）：
+{context}
+
+用户问题：{question}
+
+请回答用户问题。如果知识库内容相关，可以参考；如果不相关，请直接根据问题本身回答。"""
+                else:
+                    user_prompt = f"""用户问题：{question}
+
+请友好地回答用户问题。"""
+                
+                answer_source = "general_ai"
             
             # 构建消息列表
             messages = [
@@ -68,7 +96,7 @@ class LLMService:
             )
             
             answer = response["message"]["content"]
-            return answer
+            return answer, answer_source
             
         except Exception as e:
             logger.error(f"LLM生成答案失败: {e}")

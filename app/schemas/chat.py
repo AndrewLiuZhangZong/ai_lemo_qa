@@ -25,6 +25,7 @@ class ChatResponse(BaseModel):
     sources: List[dict] = Field(default_factory=list, description="来源知识库")
     related_questions: List[str] = Field(default_factory=list, description="相关问题")
     intent: Optional[str] = Field(None, description="识别的意图")
+    answer_source: str = Field(default="knowledge_base", description="答案来源：knowledge_base(知识库) 或 general_ai(通用AI)")
 
 
 class ApiResponse(BaseModel):

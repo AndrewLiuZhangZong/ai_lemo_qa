@@ -24,11 +24,14 @@
           <div class="message-bubble">
             {{ msg.content }}
           </div>
-          <div v-if="msg.type === 'bot' && msg.sources && msg.sources.length > 0" class="message-meta">
-            <el-tag size="small" type="info">
+          <div v-if="msg.type === 'bot'" class="message-meta">
+            <el-tag size="small" :type="msg.answerSource === 'knowledge_base' ? 'success' : 'warning'">
+              {{ msg.answerSource === 'knowledge_base' ? '📚 知识库' : '🤖 AI推理' }}
+            </el-tag>
+            <el-tag size="small" type="info" v-if="msg.sources && msg.sources.length > 0">
               置信度: {{ (msg.confidence * 100).toFixed(1) }}%
             </el-tag>
-            <el-tag size="small" type="success">{{ msg.intent }}</el-tag>
+            <el-tag size="small" type="success" v-if="msg.intent">{{ msg.intent }}</el-tag>
           </div>
           <div v-if="msg.relatedQuestions && msg.relatedQuestions.length > 0" class="related-questions">
             <p class="related-title">相关问题：</p>
@@ -130,7 +133,8 @@ const sendMessage = async () => {
       confidence: data.confidence,
       intent: data.intent,
       sources: data.sources,
-      relatedQuestions: data.related_questions
+      relatedQuestions: data.related_questions,
+      answerSource: data.answer_source
     })
     
     scrollToBottom()

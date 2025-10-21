@@ -50,8 +50,10 @@ class ChatService:
             matches = await milvus_service.search(question_embedding, top_k=5)
             
             if not matches:
-                # 没有找到相关知识
-                answer = "抱歉，我暂时无法回答您的问题。您可以换个方式提问，或者联系人工客服获取帮助。"
+                # 没有找到相关知识，使用通用AI回答
+                answer, answer_source = await llm_service.generate_answer(
+                    message, "", confidence=0.0
+                )
                 confidence = 0.0
                 sources = []
                 related_questions = []
@@ -87,13 +89,15 @@ class ChatService:
                 
                 context = "\n\n".join(context_parts)
                 
-                # 5. 使用LLM生成答案
-                answer = await llm_service.generate_answer(message, context)
-                
-                # 6. 计算置信度（使用最高的相似度作为置信度）
+                # 5. 计算置信度（使用最高的相似度作为置信度）
                 # IP（内积）分数：值越大越相似，归一化到0-1范围
                 raw_score = float(matches[0][1]) if matches else 0.0
                 confidence = max(0.0, min(1.0, (raw_score + 1.0) / 2.0))
+                
+                # 6. 使用LLM生成答案（根据置信度自动调整策略）
+                answer, answer_source = await llm_service.generate_answer(
+                    message, context, confidence=confidence
+                )
                 
                 # 7. 获取相关问题推荐
                 related_questions = [
@@ -128,10 +132,11 @@ class ChatService:
                 confidence=confidence,
                 sources=sources,
                 related_questions=related_questions,
-                intent=intent
+                intent=intent,
+                answer_source=answer_source
             )
             
-            logger.info(f"问答完成: session={session_id}, 耗时={response_time}ms, 置信度={confidence:.2f}")
+            logger.info(f"问答完成: session={session_id}, 耗时={response_time}ms, 置信度={confidence:.2f}, 来源={answer_source}")
             return response
             
         except Exception as e:
@@ -142,7 +147,8 @@ class ChatService:
                 answer="抱歉，系统出现错误，请稍后重试。",
                 confidence=0.0,
                 sources=[],
-                related_questions=[]
+                related_questions=[],
+                answer_source="error"
             )
 
 
