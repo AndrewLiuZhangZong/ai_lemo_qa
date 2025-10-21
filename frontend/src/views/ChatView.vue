@@ -80,12 +80,14 @@
             :disabled="loading"
             size="large"
             class="chat-input-field"
-            :popper-class="'history-popper'"
+            popper-class="history-popper"
+            :trigger-on-focus="true"
+            :highlight-first-item="false"
             clearable
           >
             <template #default="{ item }">
               <div class="history-item">
-                <el-icon class="history-icon"><Clock /></el-icon>
+                <el-icon class="history-icon" :size="16"><Clock /></el-icon>
                 <span class="history-text">{{ item.value }}</span>
               </div>
             </template>
@@ -159,18 +161,25 @@ const saveHistory = (question) => {
 
 // 查询历史记录（用于autocomplete）
 const queryHistory = (queryString, cb) => {
-  const results = queryString
-    ? questionHistory.value
-        .filter(q => q.toLowerCase().includes(queryString.toLowerCase()))
-        .map(q => ({ value: q }))
-    : questionHistory.value.map(q => ({ value: q }))
-  cb(results)
+  if (!queryString || queryString.trim() === '') {
+    // 没有输入时，显示所有历史记录
+    const results = questionHistory.value.slice(0, MAX_HISTORY).map(q => ({ value: q }))
+    cb(results)
+  } else {
+    // 有输入时，过滤匹配的历史记录
+    const results = questionHistory.value
+      .filter(q => q.toLowerCase().includes(queryString.toLowerCase()))
+      .slice(0, MAX_HISTORY)
+      .map(q => ({ value: q }))
+    cb(results)
+  }
 }
 
 // 选择历史记录
 const handleHistorySelect = (item) => {
   inputMessage.value = item.value
-  sendMessage()
+  // 让用户确认后再发送，不自动发送
+  // sendMessage()
 }
 
 const scrollToBottom = () => {
@@ -547,32 +556,68 @@ onMounted(() => {
 
 /* 历史记录下拉框样式 */
 :deep(.history-popper) {
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e4e7ed;
-  overflow: hidden;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid #e4e7ed !important;
+  overflow: hidden !important;
+  margin-top: 8px !important;
 }
 
-:deep(.history-popper .el-autocomplete-suggestion__list) {
-  padding: 8px;
+:deep(.history-popper .el-autocomplete-suggestion) {
+  background: white;
 }
 
 :deep(.history-popper .el-autocomplete-suggestion__wrap) {
-  max-height: 320px;
+  max-height: 400px !important;
+  padding: 12px 8px;
+}
+
+:deep(.history-popper .el-autocomplete-suggestion__list) {
+  padding: 0 !important;
+}
+
+/* 自定义滚动条 */
+:deep(.history-popper .el-autocomplete-suggestion__wrap::-webkit-scrollbar) {
+  width: 6px;
+}
+
+:deep(.history-popper .el-autocomplete-suggestion__wrap::-webkit-scrollbar-track) {
+  background: #f5f7fa;
+  border-radius: 3px;
+}
+
+:deep(.history-popper .el-autocomplete-suggestion__wrap::-webkit-scrollbar-thumb) {
+  background: #dcdfe6;
+  border-radius: 3px;
+}
+
+:deep(.history-popper .el-autocomplete-suggestion__wrap::-webkit-scrollbar-thumb:hover) {
+  background: #c0c4cc;
+}
+
+/* 历史记录项样式 */
+:deep(.history-popper .el-autocomplete-suggestion__list li) {
+  padding: 0 !important;
+  margin: 4px 0;
+  line-height: normal !important;
 }
 
 .history-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  transition: all 0.25s ease;
   cursor: pointer;
+  background: #fafafa;
+  border: 1px solid transparent;
 }
 
 .history-item:hover {
-  background: #f5f7fa;
+  background: #f0f2f5;
+  transform: translateX(4px);
+  border-color: #e4e7ed;
 }
 
 .history-icon {
@@ -582,23 +627,46 @@ onMounted(() => {
 
 .history-text {
   flex: 1;
-  color: #606266;
+  color: #303133;
   font-size: 14px;
-  white-space: nowrap;
+  line-height: 1.5;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  word-break: break-all;
 }
 
-:deep(.history-popper .el-autocomplete-suggestion__list .is-highlighted) {
-  background: #ecf5ff;
+/* 高亮选中项 */
+:deep(.history-popper .el-autocomplete-suggestion__list li.is-highlighted) {
+  background: transparent !important;
 }
 
-:deep(.history-popper .el-autocomplete-suggestion__list .is-highlighted .history-item) {
-  background: transparent;
+:deep(.history-popper .el-autocomplete-suggestion__list li.is-highlighted .history-item) {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border-color: #667eea;
+  transform: translateX(8px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.15);
 }
 
-:deep(.history-popper .el-autocomplete-suggestion__list .is-highlighted .history-text) {
-  color: #409eff;
+:deep(.history-popper .el-autocomplete-suggestion__list li.is-highlighted .history-icon) {
+  color: #667eea;
+}
+
+:deep(.history-popper .el-autocomplete-suggestion__list li.is-highlighted .history-text) {
+  color: #667eea;
+  font-weight: 500;
+}
+
+/* 空状态 */
+:deep(.history-popper .el-autocomplete-suggestion__list:empty::before) {
+  content: '💭 暂无历史记录';
+  display: block;
+  text-align: center;
+  color: #909399;
+  padding: 20px;
+  font-size: 14px;
 }
 </style>
 
