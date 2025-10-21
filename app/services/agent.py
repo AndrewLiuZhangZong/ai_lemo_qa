@@ -104,6 +104,8 @@ class AgentService:
 
 {tools}
 
+工具名称列表：{tool_names}
+
 请按照以下步骤思考和行动：
 
 1. **理解问题**：仔细分析用户的问题
