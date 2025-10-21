@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     
     # 和风天气 API 配置
     QWEATHER_API_KEY: str = ""  # 和风天气 API Key（免费版，需注册获取）
+    QWEATHER_API_HOST: str = ""  # 和风天气 API Host（在控制台中查看）
     
     # CORS配置
     CORS_ORIGINS: list = ["*"]
