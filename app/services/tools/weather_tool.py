@@ -57,9 +57,11 @@ class WeatherTool:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
                     f"{self.geo_url}/city/lookup",
+                    headers={
+                        "X-QW-Api-Key": self.api_key
+                    },
                     params={
                         "location": city_name,
-                        "key": self.api_key,
                         "lang": "zh"
                     }
                 )
@@ -112,9 +114,11 @@ class WeatherTool:
             async with httpx.AsyncClient(timeout=10.0) as client:
                 response = await client.get(
                     f"{self.base_url}/weather/now",
+                    headers={
+                        "X-QW-Api-Key": self.api_key
+                    },
                     params={
                         "location": location_id,
-                        "key": self.api_key,
                         "lang": "zh"
                     }
                 )
