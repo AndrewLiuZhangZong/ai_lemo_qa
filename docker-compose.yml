@@ -129,6 +129,31 @@ services:
       - milvus
     restart: unless-stopped
 
+  # SearXNG - 开源元搜索引擎（可选）
+  searxng:
+    image: searxng/searxng:latest
+    container_name: ai_lemo_searxng
+    ports:
+      - "8888:8080"
+    volumes:
+      - ./config/searxng:/etc/searxng
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8888/
+    networks:
+      - ai_lemo_network
+    restart: unless-stopped
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+
 networks:
   ai_lemo_network:
     driver: bridge

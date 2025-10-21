@@ -1,0 +1,12 @@
+use_default_settings: true
+
+server:
+  secret_key: "eef0e7e60eee959198811de04728fa051bced2f587829d4679ee470691d5ec76"
+  limiter: false
+  image_proxy: true
+
+search:
+  default_lang: "zh-CN"
+  formats:
+    - html
+    - json
