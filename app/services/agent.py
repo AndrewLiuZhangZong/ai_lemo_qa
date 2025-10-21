@@ -56,19 +56,50 @@ class AgentService:
         tools.extend(custom_tools)
         logger.info(f"  - 加载自定义工具: {len(custom_tools)} 个")
         
-        # 2. 网络搜索工具（DuckDuckGo - 免费）
+        # 2. 网络搜索工具（DuckDuckGo - 免费，带错误处理）
         try:
-            search_tool = DuckDuckGoSearchRun(
+            from langchain.tools import Tool
+            
+            def safe_duckduckgo_search(query: str) -> str:
+                """安全的 DuckDuckGo 搜索，带错误处理"""
+                try:
+                    from duckduckgo_search import DDGS
+                    import time
+                    
+                    # 添加延迟避免频率限制
+                    time.sleep(1)
+                    
+                    with DDGS() as ddgs:
+                        results = list(ddgs.text(query, max_results=3))
+                        
+                    if results:
+                        formatted = []
+                        for r in results:
+                            formatted.append(f"标题: {r.get('title', 'N/A')}\n内容: {r.get('body', 'N/A')}\n链接: {r.get('href', 'N/A')}")
+                        return "\n\n".join(formatted)
+                    else:
+                        return "未找到搜索结果。"
+                        
+                except Exception as e:
+                    error_msg = str(e)
+                    if "Ratelimit" in error_msg or "202" in error_msg:
+                        return "搜索服务暂时繁忙（频率限制），请稍后再试。建议：1) 稍等片刻后重试 2) 使用更具体的关键词 3) 尝试其他信息源。"
+                    else:
+                        return f"网络搜索暂时不可用：{error_msg}。建议使用其他方式获取信息。"
+            
+            search_tool = Tool(
                 name="网络搜索",
+                func=safe_duckduckgo_search,
                 description="""
                 在互联网上搜索最新信息。
                 适用于：实时新闻、天气、股票价格、最新事件等需要网络查询的问题。
                 输入：搜索关键词
                 输出：搜索结果摘要
+                注意：如果遇到频率限制，建议使用其他工具或告知用户稍后重试。
                 """
             )
             tools.append(search_tool)
-            logger.info("  - 加载 DuckDuckGo 搜索工具")
+            logger.info("  - 加载 DuckDuckGo 搜索工具（带容错）")
         except Exception as e:
             logger.warning(f"  - DuckDuckGo 工具加载失败: {e}")
         
@@ -122,6 +153,10 @@ class AgentService:
 注意：
 - 优先使用知识库查询回答公司业务问题
 - 如果知识库没有答案，再考虑其他工具
+- 网络搜索可能遇到频率限制，如果搜索失败，可以：
+  1) 使用维基百科查询相关百科知识
+  2) 基于已有知识给出建议
+  3) 礼貌告知用户稍后重试
 - 回答要准确、专业、友好
 - 如果所有工具都无法解决问题，礼貌地告知用户
 
