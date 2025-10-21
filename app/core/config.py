@@ -66,6 +66,9 @@ class Settings(BaseSettings):
     AGENT_MAX_EXECUTION_TIME: int = 60  # Agent最大执行时间（秒）
     AGENT_VERBOSE: bool = True  # 是否显示Agent思考过程
     
+    # 和风天气 API 配置
+    QWEATHER_API_KEY: str = ""  # 和风天气 API Key（免费版，需注册获取）
+    
     # CORS配置
     CORS_ORIGINS: list = ["*"]
     

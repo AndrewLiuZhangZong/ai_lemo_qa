@@ -15,14 +15,27 @@ from loguru import logger
 
 settings = get_settings()
 
-# 动态导入 Agent（如果启用）
+# 动态导入 Agent Manager（如果启用）
+AGENT_MANAGER_AVAILABLE = False
 try:
-    from .agent import get_agent_service
-    AGENT_AVAILABLE = True
-    logger.info("✅ LangChain Agent 可用")
+    from .agents import AgentManager, get_agent_manager
+    from .agents.general_agent import get_general_agent
+    from .agents.weather_agent import get_weather_agent
+    
+    # 初始化 Agent Manager
+    agent_manager = get_agent_manager()
+    
+    # 注册专业 Agent
+    agent_manager.register_agent(get_weather_agent())  # 天气专家
+    
+    # 注册通用 Agent（作为默认/兜底）
+    agent_manager.register_agent(get_general_agent(), is_default=True)
+    
+    AGENT_MANAGER_AVAILABLE = True
+    logger.info("✅ Agent Manager 已初始化，注册了 {} 个 Agent".format(len(agent_manager.list_agents())))
 except ImportError as e:
-    AGENT_AVAILABLE = False
-    logger.warning(f"⚠️  LangChain Agent 不可用: {e}")
+    agent_manager = None
+    logger.warning(f"⚠️  Agent Manager 不可用: {e}")
 
 
 class ChatService:
@@ -49,7 +62,7 @@ class ChatService:
             聊天响应
         """
         # 如果启用 Agent 且可用，使用 Agent 模式
-        if use_agent and AGENT_AVAILABLE:
+        if use_agent and AGENT_MANAGER_AVAILABLE:
             return await self.chat_with_agent(message, session_id, user_id, db)
         else:
             return await self.chat_legacy(message, session_id, user_id, db)
@@ -61,7 +74,7 @@ class ChatService:
         user_id: str = None,
         db: AsyncSession = None
     ) -> ChatResponse:
-        """使用 LangChain Agent 处理聊天
+        """使用 Agent Manager 处理聊天（自动路由）
         
         Args:
             message: 用户消息
@@ -81,14 +94,14 @@ class ChatService:
         try:
             logger.info(f"[Agent模式] 处理问题: {message}")
             
-            # 1. 使用 Agent 处理
-            agent_service = get_agent_service()
-            result = await agent_service.chat(message)
+            # 1. 使用 Agent Manager 自动路由并处理
+            result = await agent_manager.chat(message)
             
             answer = result["answer"]
             answer_source = result["answer_source"]
             confidence = result["confidence"]
             tools_used = result.get("tools_used", [])
+            agent_name = result.get("agent_name", "未知")
             
             # 2. 识别意图
             intent = await llm_service.detect_intent(message)
@@ -120,7 +133,7 @@ class ChatService:
                 answer_source=answer_source
             )
             
-            logger.info(f"[Agent模式] 完成: session={session_id}, 耗时={response_time}ms, 工具={tools_used}, 来源={answer_source}")
+            logger.info(f"[Agent模式] 完成: agent={agent_name}, session={session_id}, 耗时={response_time}ms, 工具={tools_used}, 来源={answer_source}")
             return response
             
         except Exception as e:
