@@ -179,8 +179,15 @@ docker-compose up -d
 ### 后端API服务
 
 ```bash
-cd /Users/edy/PycharmProjects/ai_lemo_qa
-source venv/bin/activate
+# 进入项目根目录
+cd ai_lemo_qa
+
+# 激活虚拟环境
+source venv/bin/activate  # macOS/Linux
+# 或
+venv\Scripts\activate  # Windows
+
+# 启动后端服务
 uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
 ```
 
@@ -191,8 +198,13 @@ uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
 ### 前端界面
 
 ```bash
-cd /Users/edy/PycharmProjects/ai_lemo_qa/frontend
-npm install  # 首次运行需要安装依赖
+# 进入前端目录
+cd frontend
+
+# 首次运行需要安装依赖
+npm install
+
+# 启动开发服务器
 npm run dev
 ```
 
