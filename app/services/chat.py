@@ -78,9 +78,10 @@ class ChatService:
                     if kid in knowledge_map:
                         k = knowledge_map[kid]
                         context_parts.append(f"问题：{k.question}\n答案：{k.answer}")
-                        # IP（内积）分数：值越大越相似
-                        # 归一化到0-1范围：假设向量已归一化，IP范围约为[-1, 1]
-                        normalized_score = max(0.0, min(1.0, (float(score) + 1.0) / 2.0))
+                        # IP（内积）分数：考虑基线相似度
+                        baseline = 0.58
+                        raw = float(score)
+                        normalized_score = max(0.0, (raw - baseline) / (1.0 - baseline)) if raw >= baseline else 0.0
                         sources.append({
                             "id": k.id,
                             "question": k.question,
@@ -90,9 +91,14 @@ class ChatService:
                 context = "\n\n".join(context_parts)
                 
                 # 5. 计算置信度（使用最高的相似度作为置信度）
-                # IP（内积）分数：值越大越相似，归一化到0-1范围
+                # IP（内积）分数：考虑模型的基线相似度（约0.58）
                 raw_score = float(matches[0][1]) if matches else 0.0
-                confidence = max(0.0, min(1.0, (raw_score + 1.0) / 2.0))
+                baseline = 0.58  # nomic-embed-text的基线相似度
+                if raw_score < baseline:
+                    confidence = 0.0
+                else:
+                    # 将[baseline, 1.0]映射到[0, 1]
+                    confidence = (raw_score - baseline) / (1.0 - baseline)
                 
                 # 6. 使用LLM生成答案（根据置信度自动调整策略）
                 answer, answer_source = await llm_service.generate_answer(
