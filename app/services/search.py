@@ -11,7 +11,8 @@ class SearchService:
     """网络搜索服务类"""
     
     def __init__(self):
-        self.searxng_url = "http://searxng:8080"  # Docker内部网络
+        # 使用localhost访问（后端在宿主机运行）
+        self.searxng_url = "http://localhost:8888"
         self.timeout = 10
     
     async def search(self, query: str, max_results: int = 5) -> List[Dict[str, str]]:
