@@ -187,16 +187,50 @@ docker-compose up -d
 
 ```
 ai_lemo_qa/
-├── config/              # 配置文件
-│   └── milvus.yaml     # Milvus配置
-├── scripts/            # 初始化脚本
-│   └── init.sql        # 数据库初始化
-├── docker-compose.yml  # Docker编排文件
-├── .env                # 环境变量（不提交到Git）
-├── .env.example        # 环境变量示例
-├── .gitignore          # Git忽略文件
-├── 需求文档.md          # 项目需求文档
-└── README.md           # 本文件
+├── app/                        # 应用主目录
+│   ├── __init__.py
+│   ├── main.py                 # FastAPI应用入口
+│   ├── api/                    # API路由
+│   │   ├── __init__.py
+│   │   └── v1/                 # API v1版本
+│   │       ├── __init__.py
+│   │       ├── chat.py         # 问答接口
+│   │       └── knowledge.py    # 知识库管理接口
+│   ├── core/                   # 核心配置
+│   │   ├── __init__.py
+│   │   ├── config.py           # 配置管理
+│   │   ├── database.py         # 数据库连接
+│   │   └── logger.py           # 日志配置
+│   ├── models/                 # SQLAlchemy数据模型
+│   │   ├── __init__.py
+│   │   ├── knowledge.py        # 知识库模型
+│   │   ├── conversation.py     # 对话历史模型
+│   │   └── feedback.py         # 反馈模型
+│   ├── schemas/                # Pydantic模型（数据验证）
+│   │   ├── __init__.py
+│   │   ├── chat.py             # 聊天请求/响应模型
+│   │   └── knowledge.py        # 知识库模型
+│   ├── services/               # 业务逻辑服务
+│   │   ├── __init__.py
+│   │   ├── embedding.py        # Embedding服务
+│   │   ├── milvus.py           # Milvus向量检索
+│   │   ├── llm.py              # LLM对话服务
+│   │   └── chat.py             # 问答业务逻辑
+│   └── utils/                  # 工具函数
+│       └── __init__.py
+├── config/                     # 配置文件
+│   └── milvus.yaml             # Milvus配置
+├── scripts/                    # 初始化脚本
+│   ├── init.sql                # 数据库初始化
+│   └── init_milvus.py          # Milvus初始化
+├── venv/                       # Python虚拟环境
+├── docker-compose.yml          # Docker编排文件
+├── requirements.txt            # Python依赖
+├── .env                        # 环境变量（不提交到Git）
+├── .gitignore                  # Git忽略文件
+├── 需求文档.md                  # 项目需求文档
+├── 开发计划.md                  # 开发计划和进度
+└── README.md                   # 本文件
 ```
 
 ## 许可证
