@@ -17,10 +17,15 @@ hiredis==3.0.0
 # AI/ML
 langchain==0.3.7
 langchain-community==0.3.7
+langchain-ollama==0.2.0
 ollama==0.4.3
 pymilvus==2.4.9
 sentence-transformers==3.3.1
 numpy==1.26.4
+
+# LangChain 工具
+duckduckgo-search==6.3.5
+wikipedia==1.4.0
 
 # 数据验证
 pydantic==2.10.2

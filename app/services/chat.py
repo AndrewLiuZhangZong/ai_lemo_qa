@@ -1,7 +1,7 @@
 """问答业务逻辑服务"""
 import uuid
 import time
-from typing import Dict, List
+from typing import Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.models import Knowledge, Conversation
@@ -15,11 +15,127 @@ from loguru import logger
 
 settings = get_settings()
 
+# 动态导入 Agent（如果启用）
+try:
+    from .agent import get_agent_service
+    AGENT_AVAILABLE = True
+    logger.info("✅ LangChain Agent 可用")
+except ImportError as e:
+    AGENT_AVAILABLE = False
+    logger.warning(f"⚠️  LangChain Agent 不可用: {e}")
+
 
 class ChatService:
     """问答服务"""
     
     async def chat(
+        self,
+        message: str,
+        session_id: str = None,
+        user_id: str = None,
+        db: AsyncSession = None,
+        use_agent: bool = True  # 默认使用 Agent
+    ) -> ChatResponse:
+        """处理聊天请求（支持 Agent 模式）
+        
+        Args:
+            message: 用户消息
+            session_id: 会话ID
+            user_id: 用户ID
+            db: 数据库会话
+            use_agent: 是否使用 LangChain Agent（默认True）
+            
+        Returns:
+            聊天响应
+        """
+        # 如果启用 Agent 且可用，使用 Agent 模式
+        if use_agent and AGENT_AVAILABLE:
+            return await self.chat_with_agent(message, session_id, user_id, db)
+        else:
+            return await self.chat_legacy(message, session_id, user_id, db)
+    
+    async def chat_with_agent(
+        self,
+        message: str,
+        session_id: str = None,
+        user_id: str = None,
+        db: AsyncSession = None
+    ) -> ChatResponse:
+        """使用 LangChain Agent 处理聊天
+        
+        Args:
+            message: 用户消息
+            session_id: 会话ID
+            user_id: 用户ID
+            db: 数据库会话
+            
+        Returns:
+            聊天响应
+        """
+        start_time = time.time()
+        
+        # 生成会话ID
+        if not session_id:
+            session_id = str(uuid.uuid4())
+        
+        try:
+            logger.info(f"[Agent模式] 处理问题: {message}")
+            
+            # 1. 使用 Agent 处理
+            agent_service = get_agent_service()
+            result = await agent_service.chat(message)
+            
+            answer = result["answer"]
+            answer_source = result["answer_source"]
+            confidence = result["confidence"]
+            tools_used = result.get("tools_used", [])
+            
+            # 2. 识别意图
+            intent = await llm_service.detect_intent(message)
+            
+            # 3. 保存对话历史
+            response_time = int((time.time() - start_time) * 1000)
+            if db:
+                conversation = Conversation(
+                    session_id=session_id,
+                    user_id=user_id,
+                    user_message=message,
+                    bot_response=answer,
+                    intent=intent,
+                    confidence=confidence,
+                    knowledge_id=None,  # Agent 模式下没有直接的 knowledge_id
+                    response_time=response_time
+                )
+                db.add(conversation)
+                await db.commit()
+            
+            # 4. 构建响应
+            response = ChatResponse(
+                session_id=session_id,
+                answer=answer,
+                confidence=confidence,
+                sources=[],  # Agent 模式下源信息在answer中
+                related_questions=[],
+                intent=intent,
+                answer_source=answer_source
+            )
+            
+            logger.info(f"[Agent模式] 完成: session={session_id}, 耗时={response_time}ms, 工具={tools_used}, 来源={answer_source}")
+            return response
+            
+        except Exception as e:
+            logger.error(f"[Agent模式] 处理失败: {e}")
+            # 返回默认错误响应
+            return ChatResponse(
+                session_id=session_id,
+                answer="抱歉，系统出现错误，请稍后重试。",
+                confidence=0.0,
+                sources=[],
+                related_questions=[],
+                answer_source="error"
+            )
+    
+    async def chat_legacy(
         self,
         message: str,
         session_id: str = None,

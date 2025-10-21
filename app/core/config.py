@@ -60,6 +60,12 @@ class Settings(BaseSettings):
     SESSION_TIMEOUT: int = 1800  # 会话超时时间(秒)
     SIMILAR_QUESTIONS_COUNT: int = 3  # 推荐相似问题数量
     
+    # LangChain Agent 配置
+    ENABLE_AGENT: bool = True  # 是否启用Agent模式
+    AGENT_MAX_ITERATIONS: int = 5  # Agent最大迭代次数
+    AGENT_MAX_EXECUTION_TIME: int = 60  # Agent最大执行时间（秒）
+    AGENT_VERBOSE: bool = True  # 是否显示Agent思考过程
+    
     # CORS配置
     CORS_ORIGINS: list = ["*"]
     
