@@ -8,7 +8,7 @@ from app.models.conversation import Conversation
 from app.schemas.feedback import FeedbackCreate, FeedbackResponse, FeedbackList
 from app.core.logger import setup_logger
 
-router = APIRouter(prefix="/feedback", tags=["用户反馈"])
+router = APIRouter(prefix="/feedback", tags=["反馈"])
 logger = setup_logger()
 
 

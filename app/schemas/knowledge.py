@@ -38,3 +38,9 @@ class KnowledgeResponse(KnowledgeBase):
     class Config:
         from_attributes = True
 
+
+class KnowledgeList(BaseModel):
+    """知识列表响应"""
+    total: int
+    items: List[KnowledgeResponse]
+

@@ -5,7 +5,7 @@ from app.schemas.chat import ChatRequest, ChatResponse, ApiResponse
 from app.services.chat import chat_service
 from app.core.database import get_db
 
-router = APIRouter()
+router = APIRouter(prefix="/chat", tags=["聊天"])
 
 
 @router.post("", response_model=ApiResponse)

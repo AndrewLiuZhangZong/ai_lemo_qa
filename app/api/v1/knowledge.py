@@ -11,7 +11,7 @@ from app.services.milvus import milvus_service
 from app.core.database import get_db
 from loguru import logger
 
-router = APIRouter()
+router = APIRouter(prefix="/knowledge", tags=["知识库"])
 
 
 @router.post("", response_model=ApiResponse)
