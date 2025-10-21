@@ -1,0 +1,151 @@
+# Milvus单机版配置文件
+
+# Etcd配置
+etcd:
+  endpoints:
+    - etcd:2379
+  rootPath: by-dev
+  metaSubPath: meta
+  kvSubPath: kv
+
+# MinIO配置
+minio:
+  address: minio
+  port: 9000
+  accessKeyID: minioadmin
+  secretAccessKey: minioadmin
+  useSSL: false
+  bucketName: a-bucket
+  rootPath: files
+
+# 通用配置
+common:
+  chanNamePrefix:
+    cluster: by-dev
+  # 数据保留时间（秒）
+  retentionDuration: 432000  # 5天
+
+# 存储配置
+localStorage:
+  path: /var/lib/milvus/data/
+
+# 日志配置
+log:
+  level: info
+  format: text
+  file:
+    rootPath: /var/lib/milvus/logs
+    maxSize: 300
+    maxAge: 10
+    maxBackups: 20
+
+# RootCoord配置
+rootCoord:
+  address: localhost
+  port: 53100
+  dmlChannelNum: 16
+  maxPartitionNum: 4096
+  minSegmentSizeToEnableIndex: 1024
+
+# DataCoord配置
+dataCoord:
+  address: localhost
+  port: 13333
+  segment:
+    maxSize: 1024
+    sealProportion: 0.25
+    assignmentExpiration: 2000
+    maxLife: 86400
+
+# QueryCoord配置
+queryCoord:
+  address: localhost
+  port: 19531
+  autoHandoff: true
+  autoBalance: true
+
+# IndexCoord配置
+indexCoord:
+  address: localhost
+  port: 31000
+
+# DataNode配置
+dataNode:
+  port: 21124
+  dataSync:
+    flowGraphMaxQueueLength: 1024
+    flowGraphMaxParallelism: 1024
+
+# QueryNode配置
+queryNode:
+  port: 21123
+  stats:
+    publishInterval: 1000
+  cacheSize: 32
+  gracefulTime: 1000
+
+# IndexNode配置
+indexNode:
+  port: 21121
+  scheduler:
+    buildParallel: 1
+
+# Proxy配置
+proxy:
+  port: 19530
+  http:
+    enabled: true
+    port: 9091
+  maxNameLength: 255
+  maxFieldNum: 64
+  maxDimension: 32768
+  maxShardNum: 256
+  maxUserNum: 100
+  maxRoleNum: 10
+
+# 消息流配置
+pulsar:
+  address: pulsar://localhost
+  port: 6650
+  maxMessageSize: 5242880
+
+# 限流配置
+quotaAndLimits:
+  enabled: true
+  quotaCenterCollectInterval: 3
+  
+  ddl:
+    enabled: true
+    collectionRate: 10
+    partitionRate: 10
+
+  dml:
+    enabled: true
+    insertRate:
+      max: 1000
+    deleteRate:
+      max: 1000
+
+  dql:
+    enabled: true
+    searchRate:
+      max: 1000
+    queryRate:
+      max: 1000
+
+# 自动索引配置
+autoIndex:
+  enable: false
+  indexType: HNSW
+  indexParams: '{"M": 18, "efConstruction": 240}'
+  searchParams: '{"ef": 64}'
+
+# 性能配置
+knowhere:
+  # SIMD类型（auto/avx512/avx2/sse4_2）
+  simdType: auto
+  
+# 内存配置
+cache:
+  cacheSize: 2147483648  # 2GB
+
