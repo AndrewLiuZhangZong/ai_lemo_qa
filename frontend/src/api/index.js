@@ -38,9 +38,11 @@ request.interceptors.response.use(
 
 // API接口
 export const chatAPI = {
-  // 发送消息
+  // 发送消息（LLM响应较慢，使用更长的超时时间）
   sendMessage(data) {
-    return request.post('/chat', data)
+    return request.post('/chat', data, {
+      timeout: 90000  // 90秒超时，给LLM充足时间
+    })
   }
 }
 

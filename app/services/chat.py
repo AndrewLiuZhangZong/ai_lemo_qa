@@ -76,8 +76,9 @@ class ChatService:
                     if kid in knowledge_map:
                         k = knowledge_map[kid]
                         context_parts.append(f"问题：{k.question}\n答案：{k.answer}")
-                        # 标准化相似度分数到0-1范围（L2距离转换）
-                        normalized_score = 1.0 / (1.0 + float(score))
+                        # IP（内积）分数：值越大越相似
+                        # 归一化到0-1范围：假设向量已归一化，IP范围约为[-1, 1]
+                        normalized_score = max(0.0, min(1.0, (float(score) + 1.0) / 2.0))
                         sources.append({
                             "id": k.id,
                             "question": k.question,
@@ -89,9 +90,10 @@ class ChatService:
                 # 5. 使用LLM生成答案
                 answer = await llm_service.generate_answer(message, context)
                 
-                # 6. 计算置信度（使用最高的相似度作为置信度，标准化到0-1）
+                # 6. 计算置信度（使用最高的相似度作为置信度）
+                # IP（内积）分数：值越大越相似，归一化到0-1范围
                 raw_score = float(matches[0][1]) if matches else 0.0
-                confidence = 1.0 / (1.0 + raw_score)  # L2距离转换为相似度
+                confidence = max(0.0, min(1.0, (raw_score + 1.0) / 2.0))
                 
                 # 7. 获取相关问题推荐
                 related_questions = [
