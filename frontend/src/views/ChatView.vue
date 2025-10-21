@@ -25,13 +25,21 @@
             {{ msg.content }}
           </div>
           <div v-if="msg.type === 'bot'" class="message-meta">
-            <el-tag size="small" :type="msg.answerSource === 'knowledge_base' ? 'success' : 'warning'">
-              {{ msg.answerSource === 'knowledge_base' ? '📚 知识库' : '🤖 AI推理' }}
+            <el-tag size="small" :type="msg.answerSource === 'knowledge_base' ? 'success' : msg.answerSource === 'web_search' ? 'primary' : 'warning'">
+              {{ msg.answerSource === 'knowledge_base' ? '📚 知识库' : msg.answerSource === 'web_search' ? '🌐 网络搜索' : '🤖 AI推理' }}
             </el-tag>
-            <el-tag size="small" type="info" v-if="msg.sources && msg.sources.length > 0">
+            <el-tag size="small" type="info" v-if="msg.confidence > 0">
               置信度: {{ (msg.confidence * 100).toFixed(1) }}%
             </el-tag>
             <el-tag size="small" type="success" v-if="msg.intent">{{ msg.intent }}</el-tag>
+          </div>
+          <div v-if="msg.sources && msg.sources.length > 0 && msg.sources[0].url" class="search-sources">
+            <p class="sources-title">🔗 参考来源：</p>
+            <div v-for="(source, i) in msg.sources" :key="i" class="source-item">
+              <a :href="source.url" target="_blank" class="source-link">
+                {{ i + 1 }}. {{ source.title || source.url }}
+              </a>
+            </div>
           </div>
           <div v-if="msg.relatedQuestions && msg.relatedQuestions.length > 0" class="related-questions">
             <p class="related-title">相关问题：</p>
@@ -320,6 +328,39 @@ const sendRelatedQuestion = (question) => {
 .related-tag:hover {
   transform: translateY(-2px);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.search-sources {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f5f7fa;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.sources-title {
+  margin: 0 0 8px 0;
+  font-weight: 500;
+  color: #606266;
+}
+
+.source-item {
+  margin: 4px 0;
+}
+
+.source-link {
+  color: #409eff;
+  text-decoration: none;
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-link:hover {
+  text-decoration: underline;
+  color: #66b1ff;
 }
 
 .chat-input {

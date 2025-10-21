@@ -10,6 +10,7 @@ from app.core.config import get_settings
 from .embedding import embedding_service
 from .milvus import milvus_service
 from .llm import llm_service
+from .search import search_service
 from loguru import logger
 
 settings = get_settings()
@@ -49,14 +50,51 @@ class ChatService:
             # 2. 在Milvus中搜索相似问题
             matches = await milvus_service.search(question_embedding, top_k=5)
             
+            # 判断是否需要网络搜索（无匹配或置信度极低）
+            use_web_search = False
             if not matches:
-                # 没有找到相关知识，使用通用AI回答
-                answer, answer_source = await llm_service.generate_answer(
-                    message, "", confidence=0.0
-                )
-                confidence = 0.0
-                sources = []
-                related_questions = []
+                use_web_search = True
+            else:
+                # 计算初步置信度
+                raw_score = float(matches[0][1]) if matches else 0.0
+                baseline = 0.58
+                if raw_score < baseline:
+                    preliminary_confidence = 0.0
+                else:
+                    preliminary_confidence = (raw_score - baseline) / (1.0 - baseline)
+                
+                # 如果置信度太低（<0.2），启用网络搜索
+                if preliminary_confidence < 0.2:
+                    use_web_search = True
+                    logger.info(f"置信度过低({preliminary_confidence:.2%})，启用网络搜索")
+            
+            if use_web_search:
+                # 使用SearXNG网络搜索
+                search_results = await search_service.search(message, max_results=3)
+                
+                if search_results:
+                    # 基于搜索结果生成答案
+                    search_context = search_service.format_search_context(search_results)
+                    answer, answer_source = await llm_service.generate_answer(
+                        message, search_context, confidence=0.0
+                    )
+                    answer_source = "web_search"  # 标记为网络搜索
+                    confidence = 0.1  # 网络搜索给一个固定的低置信度
+                    sources = [{
+                        "title": r["title"],
+                        "url": r["url"],
+                        "similarity": 0.0
+                    } for r in search_results]
+                    related_questions = []
+                    logger.info(f"使用网络搜索回答，找到{len(search_results)}条结果")
+                else:
+                    # 网络搜索也失败，使用通用AI
+                    answer, answer_source = await llm_service.generate_answer(
+                        message, "", confidence=0.0
+                    )
+                    confidence = 0.0
+                    sources = []
+                    related_questions = []
             else:
                 # 3. 从数据库获取知识详情
                 knowledge_ids = [match[0] for match in matches]
