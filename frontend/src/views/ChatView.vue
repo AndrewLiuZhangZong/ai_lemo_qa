@@ -68,39 +68,110 @@
     </div>
 
     <div class="chat-input">
-      <el-input
-        v-model="inputMessage"
-        placeholder="输入您的问题..."
-        @keyup.enter="sendMessage"
-        :disabled="loading"
-        size="large"
-      >
-        <template #append>
-          <el-button
-            :icon="Position"
-            @click="sendMessage"
-            :loading="loading"
-            type="primary"
+      <div class="input-wrapper">
+        <div class="input-container">
+          <el-icon class="input-icon" :size="20"><ChatLineRound /></el-icon>
+          <el-autocomplete
+            v-model="inputMessage"
+            :fetch-suggestions="queryHistory"
+            placeholder="输入您的问题，按回车发送..."
+            @keyup.enter="sendMessage"
+            @select="handleHistorySelect"
+            :disabled="loading"
+            size="large"
+            class="chat-input-field"
+            :popper-class="'history-popper'"
+            clearable
           >
-            发送
-          </el-button>
-        </template>
-      </el-input>
+            <template #default="{ item }">
+              <div class="history-item">
+                <el-icon class="history-icon"><Clock /></el-icon>
+                <span class="history-text">{{ item.value }}</span>
+              </div>
+            </template>
+          </el-autocomplete>
+        </div>
+        <el-button
+          class="send-button"
+          @click="sendMessage"
+          :loading="loading"
+          type="primary"
+          size="large"
+          :disabled="!inputMessage.trim()"
+        >
+          <el-icon v-if="!loading" :size="20"><Position /></el-icon>
+          <span>{{ loading ? '发送中...' : '发送' }}</span>
+        </el-button>
+      </div>
+      <div class="input-tips">
+        <el-icon :size="14"><InfoFilled /></el-icon>
+        <span>💡 支持知识库查询、网络搜索和AI问答</span>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
-import { Position } from '@element-plus/icons-vue'
+import { ref, nextTick, onMounted } from 'vue'
+import { Position, Clock, InfoFilled, ChatLineRound } from '@element-plus/icons-vue'
 import { chatAPI } from '@/api'
 import { ElMessage } from 'element-plus'
+
+const HISTORY_KEY = 'chat_history'
+const MAX_HISTORY = 10
 
 const messages = ref([])
 const inputMessage = ref('')
 const loading = ref(false)
 const messagesContainer = ref(null)
 const sessionId = ref(`session-${Date.now()}`)
+const questionHistory = ref([])
+
+// 从localStorage加载历史记录
+const loadHistory = () => {
+  try {
+    const saved = localStorage.getItem(HISTORY_KEY)
+    if (saved) {
+      questionHistory.value = JSON.parse(saved)
+    }
+  } catch (error) {
+    console.error('加载历史记录失败:', error)
+  }
+}
+
+// 保存历史记录到localStorage
+const saveHistory = (question) => {
+  try {
+    // 移除重复项
+    questionHistory.value = questionHistory.value.filter(q => q !== question)
+    // 添加到开头
+    questionHistory.value.unshift(question)
+    // 限制最多10条
+    if (questionHistory.value.length > MAX_HISTORY) {
+      questionHistory.value = questionHistory.value.slice(0, MAX_HISTORY)
+    }
+    // 保存到localStorage
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(questionHistory.value))
+  } catch (error) {
+    console.error('保存历史记录失败:', error)
+  }
+}
+
+// 查询历史记录（用于autocomplete）
+const queryHistory = (queryString, cb) => {
+  const results = queryString
+    ? questionHistory.value
+        .filter(q => q.toLowerCase().includes(queryString.toLowerCase()))
+        .map(q => ({ value: q }))
+    : questionHistory.value.map(q => ({ value: q }))
+  cb(results)
+}
+
+// 选择历史记录
+const handleHistorySelect = (item) => {
+  inputMessage.value = item.value
+  sendMessage()
+}
 
 const scrollToBottom = () => {
   nextTick(() => {
@@ -114,6 +185,9 @@ const sendMessage = async () => {
   if (!inputMessage.value.trim() || loading.value) return
 
   const userMessage = inputMessage.value.trim()
+  
+  // 保存到历史记录
+  saveHistory(userMessage)
   
   // 添加用户消息
   messages.value.push({
@@ -158,6 +232,11 @@ const sendRelatedQuestion = (question) => {
   inputMessage.value = question
   sendMessage()
 }
+
+// 组件挂载时加载历史记录
+onMounted(() => {
+  loadHistory()
+})
 </script>
 
 <style scoped>
@@ -367,16 +446,159 @@ const sendRelatedQuestion = (question) => {
   padding: 20px 30px;
   background: white;
   border-top: 1px solid #e4e7ed;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
 }
 
-:deep(.el-input-group__append) {
-  background: #409eff;
+.input-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.input-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #f5f7fa;
+  border-radius: 24px;
+  padding: 0 20px;
+  transition: all 0.3s;
+}
+
+.input-container:focus-within {
+  background: white;
+  box-shadow: 0 2px 12px rgba(102, 126, 234, 0.15);
+}
+
+.input-icon {
+  color: #909399;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.chat-input-field {
+  flex: 1;
+}
+
+:deep(.chat-input-field .el-input__wrapper) {
+  background: transparent;
+  box-shadow: none;
+  padding: 8px 0;
+}
+
+:deep(.chat-input-field .el-input__inner) {
+  font-size: 15px;
+  color: #303133;
+}
+
+:deep(.chat-input-field .el-input__inner::placeholder) {
+  color: #a8abb2;
+}
+
+.send-button {
+  padding: 12px 28px;
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 500;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border: none;
-  padding: 0;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-:deep(.el-input-group__append .el-button) {
-  margin: 0;
+.send-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.send-button:active {
+  transform: translateY(0);
+}
+
+.send-button.is-disabled {
+  background: #e4e7ed;
+  color: #a8abb2;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.send-button.is-loading {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  opacity: 0.8;
+}
+
+.input-tips {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #909399;
+  padding-left: 4px;
+}
+
+.input-tips .el-icon {
+  color: #409eff;
+}
+
+/* 历史记录下拉框样式 */
+:deep(.history-popper) {
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e4e7ed;
+  overflow: hidden;
+}
+
+:deep(.history-popper .el-autocomplete-suggestion__list) {
+  padding: 8px;
+}
+
+:deep(.history-popper .el-autocomplete-suggestion__wrap) {
+  max-height: 320px;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.history-item:hover {
+  background: #f5f7fa;
+}
+
+.history-icon {
+  color: #909399;
+  flex-shrink: 0;
+}
+
+.history-text {
+  flex: 1;
+  color: #606266;
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.history-popper .el-autocomplete-suggestion__list .is-highlighted) {
+  background: #ecf5ff;
+}
+
+:deep(.history-popper .el-autocomplete-suggestion__list .is-highlighted .history-item) {
+  background: transparent;
+}
+
+:deep(.history-popper .el-autocomplete-suggestion__list .is-highlighted .history-text) {
+  color: #409eff;
 }
 </style>
 
