@@ -5,7 +5,7 @@
 ## 技术栈
 
 - **后端框架**: FastAPI
-- **语言模型**: Ollama (Qwen2.5-7B)
+- **语言模型**: Ollama (Qwen3-8B)
 - **向量数据库**: Milvus
 - **关系数据库**: PostgreSQL 16
 - **缓存**: Redis 7
