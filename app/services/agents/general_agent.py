@@ -18,7 +18,7 @@ import time
 
 from .base import BaseAgent
 from app.core.config import get_settings
-from app.services.tools import get_all_tools
+from app.services.custom_tools import get_all_tools
 
 settings = get_settings()
 

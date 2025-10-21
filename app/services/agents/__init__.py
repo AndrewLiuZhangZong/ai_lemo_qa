@@ -7,8 +7,8 @@ Agent 服务模块
 - OrderAgent: 订单处理 (未来扩展)
 """
 
-from .manager import AgentManager
+from .manager import AgentManager, get_agent_manager
 from .base import BaseAgent
 
-__all__ = ["AgentManager", "BaseAgent"]
+__all__ = ["AgentManager", "BaseAgent", "get_agent_manager"]
 

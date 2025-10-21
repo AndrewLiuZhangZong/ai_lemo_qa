@@ -65,20 +65,30 @@ class WeatherAgent(BaseAgent):
         Returns:
             城市名称或 None
         """
-        # 常见城市模式
+        # 常见城市模式（优化版）
         city_patterns = [
-            r"([\u4e00-\u9fa5]{2,10}?)(?:市|区|县|镇)?(?:的)?(?:天气|气温|温度)",
-            r"(?:天气|气温|温度).*?([\u4e00-\u9fa5]{2,10}?)(?:市|区|县|镇)?",
-            r"([\u4e00-\u9fa5]{2,10}?)(?:市|区|县|镇)(?:的)?(?:天气|气温|温度)?",
+            # 匹配"XX市"、"XX区"、"XX县"的完整形式
+            r"([\u4e00-\u9fa5]{2,10}?(?:市|区|县|镇))(?:的)?(?:天气|气温|温度|实时)",
+            # 匹配省市区组合，如"北京市通州区"
+            r"([\u4e00-\u9fa5]{2,6}?(?:省|市)[\u4e00-\u9fa5]{2,6}?(?:市|区|县))",
+            # 匹配"天气"等关键词后的城市名
+            r"(?:天气|气温|温度).*?([\u4e00-\u9fa5]{2,8}?)(?:市|区|县|镇|的|呢|吗|？)",
+            # 兜底：匹配中文城市名（需要市/区/县/镇）
+            r"([\u4e00-\u9fa5]{2,8}?(?:市|区|县|镇))",
         ]
         
         for pattern in city_patterns:
             match = re.search(pattern, message)
             if match:
                 city = match.group(1)
-                # 过滤一些常见的非城市词
-                exclude_words = ["今天", "明天", "现在", "怎么样", "如何", "多少"]
-                if city not in exclude_words:
+                # 过滤一些常见的非城市词和修饰词
+                exclude_words = ["今天", "明天", "现在", "怎么样", "如何", "多少", "实时", "最新"]
+                # 清理city中可能包含的修饰词
+                for word in exclude_words:
+                    city = city.replace(word, "")
+                city = city.strip()
+                
+                if city and city not in exclude_words:
                     logger.info(f"[地点解析] 提取城市: {city}")
                     return city
         
