@@ -159,6 +159,11 @@ class ChatService:
             # 9. 保存对话历史
             response_time = int((time.time() - start_time) * 1000)
             if db:
+                # 只有来自知识库的答案才有knowledge_id
+                knowledge_id = None
+                if answer_source == "knowledge_base" and sources and "id" in sources[0]:
+                    knowledge_id = sources[0]["id"]
+                
                 conversation = Conversation(
                     session_id=session_id,
                     user_id=user_id,
@@ -166,7 +171,7 @@ class ChatService:
                     bot_response=answer,
                     intent=intent,
                     confidence=confidence,
-                    knowledge_id=sources[0]["id"] if sources else None,
+                    knowledge_id=knowledge_id,
                     response_time=response_time
                 )
                 db.add(conversation)
