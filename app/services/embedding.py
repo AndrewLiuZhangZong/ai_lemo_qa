@@ -11,7 +11,7 @@ class EmbeddingService:
     """Embedding服务类"""
     
     def __init__(self):
-        self.model = settings.OLLAMA_MODEL
+        self.model = settings.OLLAMA_EMBEDDING_MODEL
         self.base_url = settings.OLLAMA_BASE_URL
     
     async def get_embedding(self, text: str) -> List[float]:

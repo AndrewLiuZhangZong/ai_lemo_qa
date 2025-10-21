@@ -41,11 +41,12 @@ class Settings(BaseSettings):
     
     # Ollama配置
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "qwen3:8b"
+    OLLAMA_MODEL: str = "qwen3:8b"  # 对话模型
+    OLLAMA_EMBEDDING_MODEL: str = "nomic-embed-text"  # Embedding模型
     OLLAMA_TIMEOUT: int = 60
     
     # Embedding配置
-    EMBEDDING_DIMENSION: int = 4096  # Qwen3-8B的embedding维度
+    EMBEDDING_DIMENSION: int = 768  # nomic-embed-text的embedding维度
     
     # 业务配置
     CONFIDENCE_THRESHOLD: float = 0.7  # 答案置信度阈值

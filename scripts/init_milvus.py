@@ -28,21 +28,25 @@ async def init_milvus_data():
         logger.info(f"找到 {len(knowledge_list)} 条待同步的知识")
         
         for knowledge in knowledge_list:
+            # 提前获取需要的属性，避免在异常处理中访问
+            knowledge_id = knowledge.id
+            knowledge_question = knowledge.question
+            
             try:
                 # 生成向量
-                embedding = await embedding_service.get_embedding(knowledge.question)
+                embedding = await embedding_service.get_embedding(knowledge_question)
                 
                 # 存储到Milvus
-                milvus_id = await milvus_service.insert(knowledge.id, embedding)
+                milvus_id = await milvus_service.insert(knowledge_id, embedding)
                 
                 # 更新数据库
                 knowledge.milvus_id = milvus_id
                 await db.commit()
                 
-                logger.info(f"同步成功: id={knowledge.id}, question={knowledge.question[:30]}...")
+                logger.info(f"同步成功: id={knowledge_id}, question={knowledge_question[:30]}...")
                 
             except Exception as e:
-                logger.error(f"同步失败: id={knowledge.id}, error={e}")
+                logger.error(f"同步失败: id={knowledge_id}, error={e}")
                 await db.rollback()
         
         logger.info("Milvus数据同步完成！")
