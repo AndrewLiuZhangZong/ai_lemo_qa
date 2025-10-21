@@ -2,8 +2,8 @@
 LangChain Agent 服务
 """
 from typing import List, Dict, Optional
-from langchain.agents import AgentExecutor, create_structured_chat_agent
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.agents import AgentExecutor, create_react_agent
+from langchain.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain.tools import Tool
 from langchain_community.tools import DuckDuckGoSearchRun, WikipediaQueryRun
@@ -96,14 +96,13 @@ class AgentService:
         return tools
     
     def _create_agent(self):
-        """创建 Structured Chat Agent"""
-        # 定义系统提示词
-        system_prompt = """你是一个智能客服助手，能够使用多种工具来帮助用户解决问题。
+        """创建 React Agent"""
+        # 定义系统提示词（React格式）
+        template = """你是一个智能客服助手，能够使用多种工具来帮助用户解决问题。
 
-你有以下工具可用：
+你可以使用以下工具：
+
 {tools}
-
-工具名称：{tool_names}
 
 请按照以下步骤思考和行动：
 
@@ -123,36 +122,27 @@ class AgentService:
 - 回答要准确、专业、友好
 - 如果所有工具都无法解决问题，礼貌地告知用户
 
-使用以下格式：
+使用以下格式（严格遵守）：
 
-Question: 用户的问题
-Thought: 我需要思考如何回答这个问题
-Action: 要使用的工具名称
+Question: 用户的输入问题
+Thought: 我应该思考如何解决这个问题
+Action: 要使用的工具名称（从上面的工具列表中选择）
 Action Input: 工具的输入参数
-Observation: 工具返回的结果
-... (可以重复 Thought/Action/Observation 多次)
+Observation: 工具的返回结果
+... (可以重复 Thought/Action/Action Input/Observation 多次)
 Thought: 我现在知道最终答案了
-Final Answer: 给用户的最终回答
+Final Answer: 给用户的最终回答（用中文回答，要友好专业）
 
 开始！
 
-之前的对话历史：
-{chat_history}
-
-新问题：{input}
-{agent_scratchpad}
-"""
+Question: {input}
+Thought: {agent_scratchpad}"""
         
         # 创建提示模板
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", system_prompt),
-            MessagesPlaceholder("chat_history", optional=True),
-            ("human", "{input}"),
-            MessagesPlaceholder("agent_scratchpad"),
-        ])
+        prompt = PromptTemplate.from_template(template)
         
-        # 创建 Agent
-        agent = create_structured_chat_agent(
+        # 创建 React Agent
+        agent = create_react_agent(
             llm=self.llm,
             tools=self.tools,
             prompt=prompt,
@@ -170,7 +160,7 @@ Final Answer: 给用户的最终回答
         
         Args:
             message: 用户消息
-            chat_history: 对话历史
+            chat_history: 对话历史（暂不使用）
             
         Returns:
             {
@@ -182,10 +172,9 @@ Final Answer: 给用户的最终回答
         try:
             logger.info(f"[Agent] 收到问题: {message}")
             
-            # 执行 Agent
+            # 执行 Agent (React agent 不需要 chat_history 参数)
             response = await self.agent_executor.ainvoke({
-                "input": message,
-                "chat_history": chat_history or []
+                "input": message
             })
             
             answer = response.get("output", "抱歉，我无法回答这个问题。")
