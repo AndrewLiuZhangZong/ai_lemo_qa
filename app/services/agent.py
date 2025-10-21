@@ -4,7 +4,7 @@ LangChain Agent 服务
 from typing import List, Dict, Optional
 from langchain.agents import AgentExecutor, create_react_agent
 from langchain.prompts import PromptTemplate
-from langchain_ollama import ChatOllama
+from langchain_community.llms import Ollama
 from langchain.tools import Tool
 from langchain_community.tools import DuckDuckGoSearchRun, WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
@@ -21,11 +21,12 @@ class AgentService:
     
     def __init__(self):
         """初始化 Agent"""
-        # 初始化 LLM
-        self.llm = ChatOllama(
+        # 初始化 LLM（使用标准 Ollama LLM）
+        self.llm = Ollama(
             base_url=settings.OLLAMA_BASE_URL,
             model=settings.OLLAMA_MODEL,
             temperature=0.7,
+            num_predict=2048,  # 最大输出token数
         )
         
         # 初始化工具
